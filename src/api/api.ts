@@ -1,25 +1,18 @@
-import { DataSourceInstanceSettings, FieldType, MutableDataFrame, TimeRange } from '@grafana/data';
+import { DataSourceInstanceSettings, DataFrame, FieldType, MutableDataFrame, TimeRange } from '@grafana/data';
 import { DataSourceOptions, Query } from '../types';
 
-/**
- * API
- */
 export class Api {
-  /**
-   * Constructor
-   */
   constructor(public instanceSettings: DataSourceInstanceSettings<DataSourceOptions>) {}
 
-  /**
-   * Get data
-   */
-  getData(query: Query, range: TimeRange): MutableDataFrame {
+  // Modify the getData method to use DataFrame for tabular data
+  getData(query: Query, range: TimeRange, jsonData: any): DataFrame {
+    const fields = Object.keys(jsonData[0]).map((key) => {
+      return { name: key, values: jsonData.map((item: any) => item[key]), type: FieldType.string };
+    });
+
     return new MutableDataFrame({
       refId: query.refId,
-      fields: [
-        { name: 'Time', values: [range.from, range.to], type: FieldType.time },
-        { name: 'Value', values: [1, 2], type: FieldType.number },
-      ],
+      fields: fields,
     });
   }
 }

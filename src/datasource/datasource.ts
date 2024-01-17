@@ -1,56 +1,47 @@
-import { DataQueryRequest, DataQueryResponse, DataSourceApi, DataSourceInstanceSettings } from '@grafana/data';
+import { DataQueryRequest, DataQueryResponse, DataSourceApi, DataSourceInstanceSettings, TestDataSourceResponse } from '@grafana/data';
 import { Api } from '../api';
-import { DataSourceTestStatus } from '../constants';
 import { DataSourceOptions, Query } from '../types';
 
-/**
- * Datasource
- */
 export class DataSource extends DataSourceApi<Query, DataSourceOptions> {
-  /**
-   * Api
-   *
-   * @type {Api} api
-   */
   api: Api;
 
-  /**
-   * Constructor
-   */
   constructor(instanceSettings: DataSourceInstanceSettings<DataSourceOptions>) {
     super(instanceSettings);
     this.api = new Api(instanceSettings);
   }
 
-  /**
-   * Query
-   */
   async query(options: DataQueryRequest<Query>): Promise<DataQueryResponse> {
     const { range } = options;
-
-    /**
-     * Process targets
-     */
-    const data = options.targets.map((target) => this.api.getData(target, range));
-
-    /**
-     * Return data
-     */
+  
+    // Process targets
+    const data = await Promise.all(
+      options.targets.map(async (target) => {
+        try {
+          // Check if jsonData is defined before accessing apiURL
+          const apiUrl = target.jsonData?.apiURL;
+          if (!apiUrl) {
+            throw new Error('API URL is not defined.');
+          }
+  
+          const response = await fetch(apiUrl);
+          const jsonData = await response.json();
+          return this.api.getData(target, range, jsonData);
+        } catch (error) {
+          console.error('Error fetching data from API:', error);
+          throw error;
+        }
+      })
+    );
+  
     return { data };
-  }
+  }  
 
-  /**
-   * Health Check
-   */
-  async testDatasource() {
+  async testDatasource(): Promise<TestDataSourceResponse> {
     const isStatusOk = true;
-
-    /**
-     * Return
-     */
+  
     return {
-      status: isStatusOk ? DataSourceTestStatus.SUCCESS : DataSourceTestStatus.ERROR,
-      message: isStatusOk ? `Connected...` : "Error. Can't connect.",
+      status: isStatusOk ? 'success' : 'error',
+      message: isStatusOk ? 'Connected...' : "Error. Can't connect.",
     };
   }
 }

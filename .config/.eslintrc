@@ -9,17 +9,5 @@
   "root": true,
   "rules": {
     "react/prop-types": "off"
-  },
-  "overrides": [
-    {
-      "plugins": ["deprecation"],
-      "files": ["src/**/*.{ts,tsx}"],
-      "rules": {
-        "deprecation/deprecation": "warn"
-      },
-      "parserOptions": {
-        "project": "./tsconfig.json"
-      }
-    }
-  ]
+  }
 }

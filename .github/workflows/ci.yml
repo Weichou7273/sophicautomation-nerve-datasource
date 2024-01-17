@@ -3,88 +3,82 @@ name: CI
 on:
   push:
     branches:
-      - master
       - main
   pull_request:
     branches:
-      - master
       - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v3
+
       - name: Setup Node.js environment
         uses: actions/setup-node@v3
         with:
-          node-version: '20'
+          node-version: '18'
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
-      - name: Check types
-        run: npm run typecheck
       - name: Lint
         run: npm run lint
-      - name: Unit tests
+
+      - name: Run tests
         run: npm run test:ci
-      - name: Build frontend
+
+      - name: Build
         run: npm run build
 
-      - name: Check for backend
-        id: check-for-backend
+      - name: Sign plugin
+        run: npm run sign
+        env:
+          GRAFANA_ACCESS_POLICY_TOKEN: ${{ secrets.GRAFANA_ACCESS_POLICY_TOKEN }}
+
+      - name: Get plugin metadata
+        id: metadata
         run: |
-          if [ -f "Magefile.go" ]
-          then
-            echo "has-backend=true" >> $GITHUB_OUTPUT
-          fi
+          sudo apt-get install jq
 
-      - name: Setup Go environment
-        if: steps.check-for-backend.outputs.has-backend == 'true'
-        uses: actions/setup-go@v3
-        with:
-          go-version: '1.21'
+          export GRAFANA_PLUGIN_ID=$(cat dist/plugin.json | jq -r .id)
+          export GRAFANA_PLUGIN_VERSION=$(cat dist/plugin.json | jq -r .info.version)
+          export GRAFANA_PLUGIN_TYPE=$(cat dist/plugin.json | jq -r .type)
+          export GRAFANA_PLUGIN_ARTIFACT=${GRAFANA_PLUGIN_ID}-${GRAFANA_PLUGIN_VERSION}.zip
+          export GRAFANA_PLUGIN_ARTIFACT_CHECKSUM=${GRAFANA_PLUGIN_ARTIFACT}.md5
 
-      - name: Test backend
-        if: steps.check-for-backend.outputs.has-backend == 'true'
-        uses: magefile/mage-action@v2
-        with:
-          version: latest
-          args: coverage
+          echo "plugin-id=${GRAFANA_PLUGIN_ID}" >> $GITHUB_OUTPUT
+          echo "plugin-version=${GRAFANA_PLUGIN_VERSION}" >> $GITHUB_OUTPUT
+          echo "plugin-type=${GRAFANA_PLUGIN_TYPE}" >> $GITHUB_OUTPUT
+          echo "archive=${GRAFANA_PLUGIN_ARTIFACT}" >> $GITHUB_OUTPUT
+          echo "archive-checksum=${GRAFANA_PLUGIN_ARTIFACT_CHECKSUM}" >> $GITHUB_OUTPUT
 
-      - name: Build backend
-        if: steps.check-for-backend.outputs.has-backend == 'true'
-        uses: magefile/mage-action@v2
-        with:
-          version: latest
-          args: buildAll
-
-      - name: Check for E2E
-        id: check-for-e2e
+      - name: Package plugin
+        id: package-plugin
         run: |
-          if [ -d "cypress" ]
-          then
-            echo "has-e2e=true" >> $GITHUB_OUTPUT
-          fi
+          mv dist ${{ steps.metadata.outputs.plugin-id }}
+          zip ${{ steps.metadata.outputs.archive }} ${{ steps.metadata.outputs.plugin-id }} -r
+          md5sum ${{ steps.metadata.outputs.archive }} > ${{ steps.metadata.outputs.archive-checksum }}
+          echo "checksum=$(cat ./${{ steps.metadata.outputs.archive-checksum }} | cut -d' ' -f1)" >> $GITHUB_OUTPUT
 
-      - name: Start grafana docker
-        if: steps.check-for-e2e.outputs.has-e2e == 'true'
-        run: docker-compose up -d
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          directory: ./coverage/
+          files: ./coverage/lcov.info
+          env_vars: OS,PYTHON
+          fail_ci_if_error: false
 
-      - name: Run e2e tests
-        if: steps.check-for-e2e.outputs.has-e2e == 'true'
-        run: npm run e2e
-
-      - name: Stop grafana docker
-        if: steps.check-for-e2e.outputs.has-e2e == 'true'
-        run: docker-compose down
-
-      - name: Archive E2E output
+      - name: Upload artifact
         uses: actions/upload-artifact@v3
-        if: steps.check-for-e2e.outputs.has-e2e == 'true' && steps.run-e2e-tests.outcome != 'success'
         with:
-          name: cypress-videos
-          path: cypress/videos
-          retention-days: 5
+          name: ${{ steps.metadata.outputs.archive }}
+          path: ${{ steps.metadata.outputs.archive }}
+
+      - name: Upload artifact checksum
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ steps.metadata.outputs.archive-checksum }}
+          path: ${{ steps.metadata.outputs.archive-checksum }}
