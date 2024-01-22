@@ -1,4 +1,4 @@
-import { DataSourceInstanceSettings, DataFrame, FieldType, MutableDataFrame, TimeRange } from '@grafana/data';
+import { DataFrame, DataSourceInstanceSettings, FieldType, MutableDataFrame, TimeRange } from '@grafana/data';
 import { DataSourceOptions, Query } from '../types';
 
 export class Api {

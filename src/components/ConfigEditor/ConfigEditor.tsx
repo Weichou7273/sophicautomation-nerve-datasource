@@ -7,26 +7,29 @@ interface Props extends DataSourcePluginOptionsEditorProps<DataSourceOptions> {}
 
 export function ConfigEditor(props: Props) {
   const { onOptionsChange, options } = props;
-  const [apiData, setApiData] = useState<any>({}); // State to store API response data
-  const [apiUrl, setApiUrl] = useState(options.jsonData.apiURL || ''); // State to store API URL
+  const [apiData, setApiData] = useState<any>({});
+  const [apiUrl, setApiUrl] = useState(options.jsonData?.apiURL || '');
 
   const onApiUrlChange = (event: ChangeEvent<HTMLInputElement>) => {
     const newApiUrl = event.target.value;
     setApiUrl(newApiUrl);
-    const newOptions: DataSourceOptions = {
-      ...options.jsonData,
-      apiURL: newApiUrl,
-    };
-    onOptionsChange({ ...options, jsonData: newOptions });
-
-    // Clear apiData when the API URL is cleared
-    if (!newApiUrl) {
-      setApiData({});
-    }
-  };
+  
+    // Update the jsonData.apiURL property in the options
+    onOptionsChange({ ...options, jsonData: { ...options.jsonData, apiURL: newApiUrl } });
+  };  
+  
+  // Save the API URL when it changes
+  useEffect(() => {
+    onOptionsChange({
+      ...options,
+      jsonData: {
+        ...options.jsonData,
+        apiURL: apiUrl,
+      },
+    });
+  }, [apiUrl, onOptionsChange, options]);
 
   useEffect(() => {
-    // Fetch data when API URL is not blank
     const fetchData = async () => {
       try {
         if (apiUrl) {
@@ -45,14 +48,9 @@ export function ConfigEditor(props: Props) {
   return (
     <div className="gf-form-group">
       <InlineField label="API URL" labelWidth={12}>
-        <Input
-          onChange={onApiUrlChange}
-          value={apiUrl}
-          placeholder="Enter API URL"
-          width={40}
-        />
+        <Input onChange={onApiUrlChange} value={apiUrl} placeholder="Enter API URL" width={40} />
       </InlineField>
-      {/* Display API data */}
+      <br />
       <div>
         <h4>API Data:</h4>
         <pre>{JSON.stringify(apiData, null, 2)}</pre>

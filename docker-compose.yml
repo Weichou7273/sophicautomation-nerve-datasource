@@ -12,5 +12,5 @@ services:
     ports:
       - 3500:3000
     volumes:
-      - ./dist:/var/lib/grafana/plugins/sophicautomation-nerve-datasource
+      - ./dist:/var/lib/grafana/plugins/sophicautomation-nerve-datasource1
       - ./provisioning:/etc/grafana/provisioning
