@@ -9,5 +9,6 @@ export const TestIds = {
   },
   queryEditor: {
     fieldQueryText: 'data-testid query-editor field-query-text',
+    fieldApiURL: 'field-api-url',
   },
 };

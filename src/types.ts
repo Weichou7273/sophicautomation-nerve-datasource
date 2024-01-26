@@ -5,12 +5,6 @@ import { DataQuery } from '@grafana/schema';
  * Query
  */
 export interface Query extends DataQuery {
-  /**
-   * Query Text
-   *
-   * @type {string}
-   */
-  queryText?: string;
   refId: string;
   jsonData: { apiURL: string }; 
 }
@@ -19,23 +13,13 @@ export interface Query extends DataQuery {
  * Data Source Options
  */
 export interface DataSourceOptions extends DataSourceJsonData {
-  /**
-   * Path
-   *
-   * @type {string}
-   */
-  path?: string;
-  apiURL?: string; // Add the apiURL property
+  apiURL?: string;
+  path?: string; // Add the path property
 }
 
 /**
  * Secure JSON Data
  */
 export interface SecureJsonData {
-  /**
-   * API Key
-   *
-   * @type {string}
-   */
   apiKey?: string;
 }

@@ -41,7 +41,7 @@ const getOptions = ({
   withCredentials: false,
   ...overrideOptions,
   jsonData: {
-    path: '',
+    path: '', // Add the default value for path
     ...jsonData,
   },
   secureJsonData: {
