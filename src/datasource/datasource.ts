@@ -59,43 +59,46 @@ import { DataSourceOptions, Query } from '../types';
 
 export class DataSource extends DataSourceApi<Query, DataSourceOptions> {
   api: Api;
+  instanceSettings: any;
+  apiUrl: string; // Add this property
 
   constructor(instanceSettings: DataSourceInstanceSettings<DataSourceOptions>) {
     super(instanceSettings);
     this.api = new Api(instanceSettings);
+    this.apiUrl = instanceSettings.jsonData?.apiURL || ''; // Initialize with the default API URL
   }
 
   async query(options: DataQueryRequest<Query>): Promise<DataQueryResponse> {
-    const { range, targets } = options;
+  const { range, targets } = options;
 
-    const data = await Promise.all(
-      targets.map(async (target) => {
-        try {
-          // Get the API URL from the target's jsonData
-          const apiUrl = target?.jsonData?.apiURL;
+  const data = await Promise.all(
+    targets.map(async (target) => {
+      try {
+        // Get the API URL from the stored property
+        const apiUrl = this.apiUrl;
 
-          if (!apiUrl) {
-            throw new Error('API URL is not defined.');
-          }
-
-          console.log('API URL:', apiUrl);
-
-          // Additional logging
-          console.log('Attempting to fetch data from API...');
-
-          const response = await fetch(apiUrl);
-          const jsonData = await response.json();
-
-          return this.api.getData(target, range, jsonData);
-        } catch (error) {
-          console.error('Error fetching data from API:', error);
-          throw error;
+        if (!apiUrl) {
+          throw new Error('API URL is not defined.');
         }
-      })
-    );
 
-    return { data };
-  }
+        console.log('API URL:', apiUrl);
+
+        // Additional logging
+        console.log('Attempting to fetch data from API...');
+
+        const response = await fetch(apiUrl);
+        const jsonData = await response.json();
+
+        return this.api.getData(target, range, jsonData);
+      } catch (error) {
+        console.error('Error fetching data from API:', error);
+        throw error;
+      }
+    })
+  );
+
+  return { data };
+}
 
   async testDatasource(): Promise<any> {
     try {
