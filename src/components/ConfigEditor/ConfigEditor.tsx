@@ -15,8 +15,8 @@ interface Props extends DataSourcePluginOptionsEditorProps<DataSourceOptions> {}
  */
 export function ConfigEditor(props: Props) {
   const { onOptionsChange, options } = props;
-  const [apiData, setApiData] = useState<any>({});
-  const [apiUrl, setApiUrl] = useState(options.jsonData?.apiURL || '');
+  const [apiData, setApiData] = useState<any>({});  // State variable to store the fetched API data.
+  const [apiUrl, setApiUrl] = useState(options.jsonData?.apiURL || ''); //State variable to manage the API URL input
 
   /**
    * Handles changes to the API URL input.
